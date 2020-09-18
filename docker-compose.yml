@@ -1,0 +1,88 @@
+version: '3.8'
+
+networks:
+  thursday:
+
+services:
+  web:
+    image: php:7.3-apache
+    container_name: php73_thursday
+    build:
+      context: ./docker/web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - mysql
+    networks:
+      - thursday
+
+  mysql:
+    image: mysql:5.7.31
+    container_name: mysql_thursday
+    restart: unless-stopped
+    volumes:
+      - ./docker/mysqldata:/var/lib/mysql
+    tty: true
+    ports:
+      - "33306:3306"
+    environment:
+      MYSQL_DATABASE: thursday
+      MYSQL_USER: root
+      MYSQL_PASSWORD: mridroot
+      MYSQL_ROOT_PASSWORD: mridroot
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - thursday
+      
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin_thursday
+    restart: always
+    depends_on:
+      - mysql
+    ports:
+      - "8082:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: mridroot
+    networks:
+      - thursday
+
+  composer:
+    image: composer:1.10.7
+    container_name: composer_thursday
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    depends_on:
+      - web
+    networks:
+      - thursday
+      
+  npm:
+    image: node:12.18.1
+    container_name: npm_thursday
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ['npm']
+    networks:
+      - thursday  
+  artisan:
+    build:
+      context: ./docker/web
+      dockerfile: Dockerfile
+    container_name: artisan
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - mysql
+    working_dir: /var/www/html
+    entrypoint: ['/var/www/html/artisan']
+    networks:
+      - thursday 
+
+ 
